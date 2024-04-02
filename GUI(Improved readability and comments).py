@@ -1,165 +1,179 @@
 import sqlite3
 from PyQt5 import QtCore, QtWidgets
 
-class MainWindow(QtWidgets.QMainWindow):
-    def __init__(self):
-        super().__init__()
-        self.setupUi()
-
-    def setupUi(self):
-        """Настройка пользовательского интерфейса"""
-        self.setObjectName("MainWindow")
-        self.resize(884, 652)
-
-        self.centralwidget = QtWidgets.QWidget(self)
+class Ui_MainWindow(object):
+    def setupUi(self, MainWindow):
+        MainWindow.setObjectName("MainWindow")
+        MainWindow.resize(884, 652)
+        
+        # Основное окно для манипуляций с базой данных
+        self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
-
-        # Виджет календаря
-        self.calendarWidget = QtWidgets.QCalendarWidget(self.centralwidget)
-        self.calendarWidget.setGeometry(QtCore.QRect(0, 0, 312, 183))
-        self.calendarWidget.setObjectName("calendarWidget")
-
-        # Виджет текстового браузера
-        self.textBrowser = QtWidgets.QTextBrowser(self.centralwidget)
-        self.textBrowser.setGeometry(QtCore.QRect(490, 0, 381, 251))
-        self.textBrowser.setObjectName("textBrowser")
-
-        # Виджет LCD-дисплея
-        self.lcdNumber = QtWidgets.QLCDNumber(self.centralwidget)
-        self.lcdNumber.setGeometry(QtCore.QRect(580, 260, 221, 71))
-        self.lcdNumber.setObjectName("lcdNumber")
-
-        # Виджет графики
-        self.graphicsView = QtWidgets.QGraphicsView(self.centralwidget)
-        self.graphicsView.setGeometry(QtCore.QRect(50, 340, 771, 261))
-        self.graphicsView.setObjectName("graphicsView")
-
+        
+        # Виджеты кнопок
+        self.Buttons = QtWidgets.QWidget(self.centralwidget)
+        self.Buttons.setGeometry(QtCore.QRect(490, 0, 381, 251))
+        self.Buttons.setObjectName("Buttons")
+        
         # Кнопка "Добавить"
-        self.pushButton = QtWidgets.QPushButton(self.centralwidget)
+        self.pushButton = QtWidgets.QPushButton(self.Buttons)
         self.pushButton.setGeometry(QtCore.QRect(30, 20, 75, 23))
         self.pushButton.setObjectName("pushButton")
         self.pushButton.clicked.connect(self.on_add_button_clicked)
-
+        
         # Кнопка "Посмотреть"
-        self.pushButton_2 = QtWidgets.QPushButton(self.centralwidget)
+        self.pushButton_2 = QtWidgets.QPushButton(self.Buttons)
         self.pushButton_2.setGeometry(QtCore.QRect(30, 80, 75, 23))
         self.pushButton_2.setObjectName("pushButton_2")
-        self.pushButton_2.clicked.connect(self.on_watch_button_clicked)
+        self.pushButton_2.clicked.connect(self.out_of_button_clicked)
+        
+        # Виджет текстового браузера
+        self.textBrowser = QtWidgets.QTextBrowser(self.Buttons)
+        self.textBrowser.setGeometry(QtCore.QRect(130, 0, 256, 251))
+        self.textBrowser.setObjectName("textBrowser")
+        
+        # Виджеты для ввода даты и денег
+        self.date_field = None
+        self.money_field = None
+        
+        # Диалоговое окно добавления записей в таблицу базы данных
+        self.commitDialog = QtWidgets.QDialog() 
+        self.setupCommitDialog()
+        
+        # Диалоговое окно просмотра записей с таблицы базы данных
+        self.watchDialog = QtWidgets.QDialog()
+        self.setupWatchDialog()
 
-        # Кнопка "Изменить"
-        self.pushButton_3 = QtWidgets.QPushButton(self.centralwidget)
-        self.pushButton_3.setGeometry(QtCore.QRect(30, 150, 75, 23))
-        self.pushButton_3.setObjectName("pushButton_3")
+        # Установка виджетов
+        self.setupWidgets(MainWindow)
 
-        # Кнопка "Удалить"
-        self.pushButton_4 = QtWidgets.QPushButton(self.centralwidget)
-        self.pushButton_4.setGeometry(QtCore.QRect(30, 210, 75, 23))
-        self.pushButton_4.setObjectName("pushButton_4")
+    def setupWidgets(self, MainWindow):
+        """Установка виджетов."""
+        self.setupMainWindow(MainWindow)
+        self.setupMenuBar(MainWindow)
+        self.setupStatusBar(MainWindow)
 
-        self.setCentralWidget(self.centralwidget)
-
-        # Меню и строка состояния
-        self.menubar = QtWidgets.QMenuBar(self)
+    def setupMainWindow(self, MainWindow):
+        """Установка основного окна."""
+        MainWindow.setCentralWidget(self.centralwidget)
+        
+    def setupMenuBar(self, MainWindow):
+        """Установка меню."""
+        self.menubar = QtWidgets.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 884, 21))
         self.menubar.setObjectName("menubar")
-        self.setMenuBar(self.menubar)
+        MainWindow.setMenuBar(self.menubar)
 
-        self.statusbar = QtWidgets.QStatusBar(self)
+    def setupStatusBar(self, MainWindow):
+        """Установка строки состояния."""
+        self.statusbar = QtWidgets.QStatusBar(MainWindow)
         self.statusbar.setObjectName("statusbar")
-        self.setStatusBar(self.statusbar)
+        MainWindow.setStatusBar(self.statusbar)
 
-        self.retranslateUi()
+    def setupCommitDialog(self):
+        """Установка диалогового окна для добавления записей."""
+        self.commitDialog.setWindowTitle("Введите данные")
+        self.commitDialog.resize(300, 200)
+        self.form_layout = QtWidgets.QFormLayout(self.commitDialog)
+        self.date_field = QtWidgets.QDateEdit(self.commitDialog)
+        self.date_field.setCalendarPopup(True)
+        self.form_layout.addRow("Дата:", self.date_field)
+        self.money_field = QtWidgets.QLineEdit(self.commitDialog)
+        self.form_layout.addRow("Количество денег:", self.money_field)
+        self.button_box = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel)
+        self.button_box.accepted.connect(self.on_commit_button_clicked)
+        self.button_box.rejected.connect(self.commitDialog.reject)
+        self.form_layout.addWidget(self.button_box)
+
+    def setupWatchDialog(self):
+        """Установка диалогового окна для просмотра записей."""
+        self.watchDialog.setWindowTitle("Введите данные")
+        self.watchDialog.resize(300, 200)
+        self.watch_form_layout = QtWidgets.QFormLayout(self.watchDialog)
+        self.watch_date_field = QtWidgets.QDateEdit(self.watchDialog)
+        self.watch_date_field.setCalendarPopup(True)
+        self.watch_form_layout.addRow("Дата:", self.watch_date_field)
+        self.watch_button_box = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel)
+        self.watch_button_box.accepted.connect(self.on_watchFromTable_button_clicked)
+        self.watch_button_box.rejected.connect(self.watchDialog.reject)
+        self.watch_form_layout.addWidget(self.watch_button_box)
 
     def on_add_button_clicked(self):
-        """Обработчик нажатия кнопки "Добавить"."""
-        dialog = CommitDialog(self)
-        if dialog.exec_() == QtWidgets.QDialog.Accepted:
-            self.textBrowser.append("Успешно добавлено!")
+        """Обработчик нажатия кнопки 'Добавить'."""
+        self.commitDialog.show()
 
-    def on_watch_button_clicked(self):
-        """Обработчик нажатия кнопки "Посмотреть"."""
-        dialog = WatchDialog(self)
-        if dialog.exec_() == QtWidgets.QDialog.Accepted:
-            pass  # Обработать результат из диалогового окна просмотра
+    def on_commit_button_clicked(self):
+        """Обработчик нажатия кнопки 'Ok' в диалоговом окне добавления записей."""
+        connection = sqlite3.connect("timeMoney.db")
+        date = self.date_field.date().toString("yyyy-MM-dd")
+        money = self.money_field.text()
+        data_tuple = (date, money)
+        addToTable(connection, data_tuple)
+        ui.textBrowser.append("Успешно добавлено!")
+        self.commitDialog.close()
 
-    def retranslateUi(self):
-        """Перевод пользовательского интерфейса."""
+    def on_cancel_button_clicked(self):
+        """Обработчик нажатия кнопки 'Отмена' в диалоговом окне добавления записей."""
+        self.commitDialog.close()
+
+    def on_cancelWatch_button_clicked(self):
+        """Обработчик нажатия кнопки 'Отмена' в диалоговом окне просмотра записей."""
+        self.watchDialog.close()
+
+    def on_watchFromTable_button_clicked(self):
+        """Обработчик нажатия кнопки 'Ok' в диалоговом окне просмотра записей."""
+        connection = sqlite3.connect("timeMoney.db")
+        date = self.watch_date_field.date().toString("yyyy-MM-dd")
+        data_tuple = (date,)
+        receiveData = outOfTable(connection, data_tuple)
+        formattedData = "\n".join(map(str, receiveData))
+        ui.textBrowser.setText(formattedData)
+        connection.close()
+
+    def out_of_button_clicked(self):
+        """Обработчик нажатия кнопки 'Посмотреть'."""
+        self.watchDialog.show()
+
+    def retranslateUi(self, MainWindow):
+        """Установка переводов."""
         _translate = QtCore.QCoreApplication.translate
-        self.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
         self.pushButton.setText(_translate("MainWindow", "Добавить"))
         self.pushButton_2.setText(_translate("MainWindow", "Посмотреть"))
         self.pushButton_3.setText(_translate("MainWindow", "Изменить"))
         self.pushButton_4.setText(_translate("MainWindow", "Удалить"))
+        self.button_box.commitButton.setText(_translate("MainWindow", "Записать"))
+        self.button_box.cancelButton.setText(_translate("MainWindow", "Отмена"))
+        self.watch_button_box.watchButton.setText(_translate("MainWindow", "Применить"))
+        self.watch_button_box.cancelWatchButton.setText(_translate("MainWindow", "Отмена"))
 
-class CommitDialog(QtWidgets.QDialog):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setWindowTitle("Введите данные")
-        self.resize(300, 200)
-        self.layout = QtWidgets.QVBoxLayout(self)
-
-        self.date_field = QtWidgets.QLineEdit()
-        self.layout.addRow("Дата:", self.date_field)
-
-        self.money_field = QtWidgets.QLineEdit()
-        self.layout.addRow("Количество денег:", self.money_field)
-
-        self.button_box = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel)
-        self.layout.addWidget(self.button_box)
-
-        self.button_box.accepted.connect(self.accept)
-        self.button_box.rejected.connect(self.reject)
-
-    def get_data(self):
-        """Получить данные из диалогового окна."""
-        return self.date_field.text(), self.money_field.text()
-
-class WatchDialog(QtWidgets.QDialog):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setWindowTitle("Введите данные")
-        self.resize(300, 200)
-        self.layout = QtWidgets.QVBoxLayout(self)
-
-        self.date_field = QtWidgets.QLineEdit()
-        self.layout.addRow("Дата:", self.date_field)
-
-        self.button_box = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel)
-        self.layout.addWidget(self.button_box)
-
-        self.button_box.accepted.connect(self.accept)
-        self.button_box.rejected.connect(self.reject)
-
-    def get_date(self):
-        """Получить дату из диалогового окна."""
-        return self.date_field.text()
 
 def addToTable(connection, data_tuple):
     """Добавить данные в базу данных."""
     try:
         cursor = connection.cursor()
-        cursor.execute("INSERT INTO Tracking (date, money) VALUES (?, ?)", data_tuple)
+        cursor.execute("""INSERT INTO Tracking (date, money) VALUES (?, ?)""", data_tuple)
         connection.commit()
+        connection.close()
     except sqlite3.Error as e:
         print(f"Ошибка при добавлении данных в базу данных: {e}")
-    finally:
-        connection.close()
 
 def outOfTable(connection, data_tuple):
     """Получить данные из базы данных."""
     try:
         cursor = connection.cursor()
-        cursor.execute("SELECT money, date FROM Tracking WHERE date = ?", data_tuple)
+        cursor.execute("""SELECT money, date FROM Tracking WHERE date = ?""", data_tuple)
         info = cursor.fetchall()
+        connection.commit()
         return info
     except sqlite3.Error as e:
         print(f"Ошибка при получении данных из базы данных: {e}")
-    finally:
-        connection.close()
 
 if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)
-    MainWindow = MainWindow()
+    MainWindow = QtWidgets.QMainWindow()
+    ui = Ui_MainWindow()
+    ui.setupUi(MainWindow)
     MainWindow.show()
     sys.exit(app.exec_())
