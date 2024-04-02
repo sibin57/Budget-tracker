@@ -68,7 +68,7 @@ class Ui_MainWindow(object):
         self.watchDialog.setWindowTitle("Введите данные")
         self.watchDialog.resize(300, 200)
         self.watch_form_layout = QtWidgets.QFormLayout(self.watchDialog)
-        self.watch_date_field = QtWidgets.QLineEdit(self.watchDialog)
+        self.watch_date_field = QtWidgets.QDateEdit(self.watchDialog)
         self.watch_form_layout.addRow("Дата:", self.watch_date_field)
         self.watch_button_box = QtWidgets.QDialogButtonBox(self.watchDialog)
         self.watch_button_box.watchButton = QtWidgets.QPushButton(self.watchDialog)
@@ -83,12 +83,15 @@ class Ui_MainWindow(object):
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def on_add_button_clicked(self): #К первой кнопке
+        date = self.calendarWidget.selectedDate().toString("yyyy-MM-dd")
+        self.date_field.setText(date)
         self.commitDialog.show()
-        self.on_commit_button_clicked
+        
         
     def on_commit_button_clicked(self): #К первой кнопке
-        connection = sqlite3.connect("timeMoney.db")
-        date = self.date_field.text()
+        connection = sqlite3.connect("D:\\Проекты\\project_popov\\timeMoney.db")
+        date = self.calendarWidget.selectedDate().toString("yyyy-MM-dd")
+        self.date_field.setText(date)
         money = self.money_field.text()
         data_tuple = (date, money)
         addToTable(connection, data_tuple)
@@ -102,10 +105,9 @@ class Ui_MainWindow(object):
         self.watchDialog.close()
     
     def on_watchFromTable_button_clicked(self):#Ко второй кнопке
-        connection = sqlite3.connect("timeMoney.db")
-        date = self.watch_date_field.text()
+        connection = sqlite3.connect("D:\\Проекты\\project_popov\\timeMoney.db")
+        date = self.watch_date_field.date().toString("yyyy-MM-dd")
         data_tuple = (date,)
-        outOfTable(connection, data_tuple)
         receiveData = outOfTable(connection, data_tuple)
         formattedData = "\n".join(map(str, receiveData))
         ui.textBrowser.setText(formattedData)
@@ -113,7 +115,7 @@ class Ui_MainWindow(object):
 
     def out_of_button_clicked(self): #Ко второй кнопке
         self.watchDialog.show()
-        self.on_watchFromTable_button_clicked
+        
         
 
     def retranslateUi(self, MainWindow):
@@ -158,3 +160,4 @@ if __name__ == "__main__":
     ui.setupUi(MainWindow)
     MainWindow.show()
     sys.exit(app.exec_())
+
