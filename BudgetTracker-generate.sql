@@ -7,4 +7,3 @@ CREATE TABLE IF NOT EXISTS budget (
     spending    INTEGER
 );
 
-
