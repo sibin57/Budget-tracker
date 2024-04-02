@@ -89,7 +89,7 @@ class Ui_MainWindow(object):
         
         
     def on_commit_button_clicked(self): #К первой кнопке
-        connection = sqlite3.connect("D:\\Проекты\\project_popov\\timeMoney.db")
+        connection = sqlite3.connect("timeMoney.db")
         date = self.calendarWidget.selectedDate().toString("yyyy-MM-dd")
         self.date_field.setText(date)
         money = self.money_field.text()
@@ -105,7 +105,7 @@ class Ui_MainWindow(object):
         self.watchDialog.close()
     
     def on_watchFromTable_button_clicked(self):#Ко второй кнопке
-        connection = sqlite3.connect("D:\\Проекты\\project_popov\\timeMoney.db")
+        connection = sqlite3.connect("timeMoney.db")
         date = self.watch_date_field.date().toString("yyyy-MM-dd")
         data_tuple = (date,)
         receiveData = outOfTable(connection, data_tuple)
