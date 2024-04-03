@@ -132,13 +132,19 @@ class Ui_MainWindow(object):
         self.watch_button_box.cancelWatchButton.setText(_translate("MainWindow", "Отмена"))
 
 
-def addToTable(connection, data_tuple):
+def addToTable(connection, date, income, spending):#TODO переделать вызовы функции
+    """Функция добавления записей в БД
+    :connection: объект sql подключения
+    :date: строка даты в формате "yyyy-MM-dd"
+    :income: число, денежный доход
+    :spending: число, денежный расход
+    """
     try:
         cursor = connection.cursor()
     except sqlite3.Error as e:
         print(f"Ошибка подключения к базе данных: {e}")
 
-    cursor.execute("""INSERT INTO Tracking (date, money) values (?, ?)""", data_tuple)
+    cursor.execute("""INSERT INTO Tracking (date, money) values (?, ?)""", data_tuple)#TODO переделать запрос
     connection.commit()
     connection.close()
 
@@ -162,7 +168,7 @@ def checkDatabase():
         conn.cursor().execute("""
             CREATE TABLE IF NOT EXISTS budget (
                 id          INTEGER PRIMARY KEY AUTOINCREMENT,
-                day         TEXT NOT NULL,
+                date        TEXT NOT NULL,
                 income      INTEGER,
                 spending    INTEGER
             );
