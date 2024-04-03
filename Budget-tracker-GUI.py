@@ -28,7 +28,7 @@ class Ui_MainWindow(object):
         self.pushButton_3 = QtWidgets.QPushButton(self.Buttons)
         self.pushButton_3.setGeometry(QtCore.QRect(30, 150, 75, 23))
         self.pushButton_3.setObjectName("pushButton_3")
-        self.pushButton_3.clicked.connect(self.change_button_clicked)
+        self.pushButton_3.clicked.connect(self.openChangeDialog_button_clicked)
         self.pushButton_4 = QtWidgets.QPushButton(self.Buttons)
         self.pushButton_4.setGeometry(QtCore.QRect(30, 210, 75, 23))
         self.pushButton_4.setObjectName("pushButton_4")
@@ -52,23 +52,29 @@ class Ui_MainWindow(object):
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
         self.statusbar.setObjectName("statusbar")
         MainWindow.setStatusBar(self.statusbar)
+
         #Диалоговое окно добавления записей в таблицу базы данных
         self.commitDialog = QtWidgets.QDialog()
         self.commitDialog.setWindowTitle("Введите данные")
         self.commitDialog.resize(300, 200)
         self.form_layout = QtWidgets.QFormLayout(self.commitDialog)
-        self.date_field = QtWidgets.QLineEdit(self.commitDialog)
+        self.date_field = QtWidgets.QDateEdit(self.commitDialog)
         self.form_layout.addRow("Дата:", self.date_field)
-        self.money_field = QtWidgets.QLineEdit(self.commitDialog)
-        self.form_layout.addRow("Количество денег:", self.money_field)
+        self.incoming_field = QtWidgets.QSpinBox(self.commitDialog)
+        self.incoming_field.setRange(0, 2147483647)
+        self.form_layout.addRow("Количество зачисленных денег:", self.incoming_field)
+        self.spending_field = QtWidgets.QSpinBox(self.commitDialog)
+        self.spending_field.setRange(0, 2147483647)
+        self.form_layout.addRow("Количество потраченных денег:", self.spending_field)
         self.button_box = QtWidgets.QDialogButtonBox(self.commitDialog)
         self.button_box.commitButton = QtWidgets.QPushButton(self.commitDialog)
-        self.button_box.commitButton.setGeometry(QtCore.QRect(30, 65, 75, 23))
+        self.button_box.commitButton.setGeometry(QtCore.QRect(30, 85, 75, 23))
         self.button_box.commitButton.clicked.connect(self.on_commit_button_clicked)
         self.button_box.cancelButton = QtWidgets.QPushButton(self.commitDialog)
-        self.button_box.cancelButton.setGeometry(QtCore.QRect(30, 130, 75, 23))
+        self.button_box.cancelButton.setGeometry(QtCore.QRect(200, 85, 75, 23))
         self.button_box.cancelButton.clicked.connect(self.on_cancel_button_clicked)
         self.form_layout.addWidget(self.button_box)
+
         #Диалоговое окно просмотра записей с таблицы базы данных
         self.watchDialog = QtWidgets.QDialog()
         self.watchDialog.setWindowTitle("Введите данные")
@@ -85,20 +91,41 @@ class Ui_MainWindow(object):
         self.watch_button_box.cancelWatchButton.clicked.connect(self.on_cancelWatch_button_clicked)
         self.watch_form_layout.addWidget(self.watch_button_box)
 
+        #Диалоговое окно для изменения записей с таблицы базы данных
+        self.changeDialog = QtWidgets.QDialog() #Создается диалог
+        self.changeDialog.setWindowTitle("Измените данные")
+        self.changeDialog.resize(400, 200)
+        self.change_form_layout = QtWidgets.QFormLayout(self.changeDialog) #Видимый слой на котором в будущем будут добавляться элементы ниже
+        self.change_date_field = QtWidgets.QDateEdit(self.changeDialog) # Поле с датой
+        self.change_form_layout.addRow("Выбор даты:", self.change_date_field) # Возле поля с датой пишется название этого поля
+        self.income_edit_field = QtWidgets.QSpinBox(self.changeDialog)
+        self.income_edit_field.setRange(0, 2147483647) #Установка границ максимального числа в поле
+        self.change_form_layout.addRow("Изменить количество зачисленных денег:", self.income_edit_field)
+        self.spending_edit_field = QtWidgets.QSpinBox(self.changeDialog)
+        self.spending_edit_field.setRange(0, 2147483647)
+        self.change_form_layout.addRow("Изменить количество потраченных денег:", self.spending_edit_field)
+        self.change_button_box = QtWidgets.QDialogButtonBox(self.changeDialog) # Сетка для кнопок
+        self.change_button_box.changeButton = QtWidgets.QPushButton(self.changeDialog) # Инициализация кнопки
+        self.change_button_box.changeButton.setGeometry(QtCore.QRect(30, 90, 75, 23)) # Установка положения кнопки
+        self.change_button_box.changeButton.clicked.connect(self.change_button_clicked) # Установка метода в кнопку ПРИ нажатии на нее
+        self.change_button_box.cancelChangeButton = QtWidgets.QPushButton(self.changeDialog)
+        self.change_button_box.cancelChangeButton.setGeometry(QtCore.QRect(150, 90, 75, 23))
+        self.change_button_box.cancelChangeButton.clicked.connect(self.quitChangeDialog_button_clicked)
+        self.change_form_layout.addWidget(self.watch_button_box) # Добавление сетки с кнопками
+
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def on_add_button_clicked(self): #К первой кнопке
-        date = self.calendarWidget.selectedDate().toString("yyyy-MM-dd")
-        self.date_field.setText(date)
         self.commitDialog.show()
-
+        self.date_field.date().toString("yyyy-MM-dd")
 
     def on_commit_button_clicked(self): #К первой кнопке
         connection = sqlite3.connect(DATABASE_FILE)
-        date = self.calendarWidget.selectedDate().toString("yyyy-MM-dd")
-        self.date_field.setText(date)
-        money = self.money_field.text() #TODO переделайте окошко: добавьте поля для доходов и расходов
+        self.date_field.date().toString("dd.MM.yyyy") 
+        date = self.date_field.text()
+        income = self.incoming_field.text()
+        spending = self.spending_field.text() #TODO переделайте окошко: добавьте поля для доходов и расходов
         addToTable(connection, date, income, spending)#Вот вам функция 
         ui.textBrowser.append("Успешно добавлено!")
         self.commitDialog.close()
@@ -111,7 +138,7 @@ class Ui_MainWindow(object):
 
     def on_watchFromTable_button_clicked(self):#Ко второй кнопке
         connection = sqlite3.connect(DATABASE_FILE)
-        date = self.watch_date_field.date().toString("yyyy-MM-dd")
+        date = self.watch_date_field.date().toString("dd.MM.yyyy")
         receiveData = outOfTable(connection, date)
         formattedData = "\n".join(map(str, receiveData))
         ui.textBrowser.setText(formattedData)
@@ -120,76 +147,23 @@ class Ui_MainWindow(object):
     def out_of_button_clicked(self): #Ко второй кнопке
         self.watchDialog.show()
 
+    def openChangeDialog_button_clicked(self):
+        self.changeDialog.show()
+
+    def quitChangeDialog_button_clicked(self):
+        self.changeDialog.close()
+
     def change_button_clicked(self):
-        dialog = QtWidgets.QDialog()
-        dialog.setWindowTitle("Изменение записи")
-        layout = QtWidgets.QVBoxLayout()  # Основной вертикальный макет для размещения виджетов
-        dialog.setLayout(layout)
-
-        # Подписи к полям ввода
-        date_label = QtWidgets.QLabel("Дата:")
-        income_label = QtWidgets.QLabel("Новый доход:")
-        spending_label = QtWidgets.QLabel("Новый расход:")
-
-        # Поля ввода
-        date_edit = QtWidgets.QDateEdit()
-        date_edit.setFont(QtGui.QFont("Arial", 12))  # Установка шрифта и размера шрифта
-        date_edit.setFixedWidth(130)
-        income_spinbox = QtWidgets.QSpinBox()
-        income_spinbox.setMinimum(0)
-        income_spinbox.setMaximum(2147483647)
-        income_spinbox.setFont(QtGui.QFont("Arial", 12))  # Установка шрифта и размера шрифта
-        income_spinbox.setFixedWidth(130)
-        spending_spinbox = QtWidgets.QSpinBox()
-        spending_spinbox.setMinimum(0)
-        spending_spinbox.setMaximum(2147483647)
-        spending_spinbox.setFont(QtGui.QFont("Arial", 12))  # Установка шрифта и размера шрифта
-        spending_spinbox.setFixedWidth(130)
-
-        # Кнопка OK
-        ok_button = QtWidgets.QPushButton("OK")
-
-        # Горизонтальные макеты для каждой строки
-        date_layout = QtWidgets.QHBoxLayout()
-        income_layout = QtWidgets.QHBoxLayout()
-        spending_layout = QtWidgets.QHBoxLayout()
-        button_layout = QtWidgets.QHBoxLayout()
-
-        # Установка выравнивания влево для каждого горизонтального макета
-        date_layout.setAlignment(QtCore.Qt.AlignLeft)
-        income_layout.setAlignment(QtCore.Qt.AlignLeft)
-        spending_layout.setAlignment(QtCore.Qt.AlignLeft)
-        button_layout.setAlignment(QtCore.Qt.AlignLeft)
-
-        # Добавление подписей и полей ввода в соответствующие макеты
-        date_layout.addWidget(date_label)
-        date_layout.addWidget(date_edit)
-        income_layout.addWidget(income_label)
-        income_layout.addWidget(income_spinbox)
-        spending_layout.addWidget(spending_label)
-        spending_layout.addWidget(spending_spinbox)
-        button_layout.addWidget(ok_button)
-
-        # Добавление горизонтальных макетов в основной вертикальный макет
-        layout.addLayout(date_layout)
-        layout.addLayout(income_layout)
-        layout.addLayout(spending_layout)
-        layout.addLayout(button_layout)
-
-        dialog.resize(300, 300)  # Установка размеров диалогового окна
-
-        if dialog.exec_():
-            selected_date = date_edit.date().toString("yyyy-MM-dd")
-            selected_income = income_spinbox.value()
-            selected_spending = spending_spinbox.value()
-            response = changeTable(selected_date, selected_income, selected_spending)
-            print("Введённая дата:", selected_date)
-            print("Введённый доход:", selected_income)
-            print("Введённый расход:", selected_spending)
-            print("Произошло ли изменение?:",response)
-
-
-    def retranslateUi(self, MainWindow):
+        connection = sqlite3.connect(DATABASE_FILE)
+        selected_date = self.change_date_field.date().toString("dd.MM.yyyy")
+        selected_income = self.income_edit_field.text()
+        selected_spending = self.spending_edit_field.text()
+        changeTable(connection, selected_date, selected_income, selected_spending)
+        ui.textBrowser.append("Данные успешно были изменены!")
+        self.changeDialog.close()
+        
+          
+    def retranslateUi(self, MainWindow): # Если нужно назвать кнопку пишите сюда по примеру
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
         self.pushButton.setText(_translate("MainWindow", "Добавить"))
@@ -200,6 +174,8 @@ class Ui_MainWindow(object):
         self.button_box.cancelButton.setText(_translate("MainWindow", "Отмена"))
         self.watch_button_box.watchButton.setText(_translate("MainWindow", "Применить"))
         self.watch_button_box.cancelWatchButton.setText(_translate("MainWindow", "Отмена"))
+        self.change_button_box.changeButton.setText(_translate("MainWindow", "Изменить"))
+        self.change_button_box.cancelChangeButton.setText(_translate("MainWindow", "Отмена"))
 
 #TODO добавьте функционал для кнопки удаления, используйте deleteFromTable(connection, date)
 
@@ -250,12 +226,12 @@ def changeTable(connection, date, income, spending):
         print(f"Ошибка подключения к базе данных: {e}")
 
     cursor.execute("UPDATE budget SET income = ?, spending = ? WHERE date = ?", (income, spending, date))
-    response = bool(cursor.rowcount)
+    response = cursor.fetchall()
     connection.commit()
     connection.close()
-    return response
+    
 
-def deleteFromTable(connection, date)
+def deleteFromTable(connection, date):
     """Функция удаления записей из БД по дате
     :connection: объект sql подключения
     :date: строка даты в формате "yyyy-MM-dd"
@@ -277,7 +253,6 @@ def checkDatabase():
     """
     try:
         conn = sqlite3.connect(DATABASE_FILE)
-        conn.cursor().execute("DROP TABLE IF EXISTS budget;")
         conn.cursor().execute("""
             CREATE TABLE IF NOT EXISTS budget (
                 id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -286,7 +261,7 @@ def checkDatabase():
                 spending    INTEGER
             );
                               """)
-    except Error as e:
+    except sqlite3.Error as e:
         print(e)
     finally:
         if conn:
