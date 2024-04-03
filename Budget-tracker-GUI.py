@@ -1,6 +1,8 @@
 import sqlite3
-from PyQt5 import QtCore, QtWidgets
 import os
+from PyQt5 import QtGui
+from PyQt5 import QtCore, QtWidgets
+from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QInputDialog, QLineEdit
 
 DATABASE_FILE = "timeMoney.db"
 
@@ -26,6 +28,7 @@ class Ui_MainWindow(object):
         self.pushButton_3 = QtWidgets.QPushButton(self.Buttons)
         self.pushButton_3.setGeometry(QtCore.QRect(30, 150, 75, 23))
         self.pushButton_3.setObjectName("pushButton_3")
+        self.pushButton_3.clicked.connect(self.change_button_clicked)
         self.pushButton_4 = QtWidgets.QPushButton(self.Buttons)
         self.pushButton_4.setGeometry(QtCore.QRect(30, 210, 75, 23))
         self.pushButton_4.setObjectName("pushButton_4")
@@ -50,7 +53,7 @@ class Ui_MainWindow(object):
         self.statusbar.setObjectName("statusbar")
         MainWindow.setStatusBar(self.statusbar)
         #Диалоговое окно добавления записей в таблицу базы данных
-        self.commitDialog = QtWidgets.QDialog()
+        self.commitDialog = QtWidgets.QDialog() 
         self.commitDialog.setWindowTitle("Введите данные")
         self.commitDialog.resize(300, 200)
         self.form_layout = QtWidgets.QFormLayout(self.commitDialog)
@@ -71,7 +74,7 @@ class Ui_MainWindow(object):
         self.watchDialog.setWindowTitle("Введите данные")
         self.watchDialog.resize(300, 200)
         self.watch_form_layout = QtWidgets.QFormLayout(self.watchDialog)
-        self.watch_date_field = QtWidgets.QLineEdit(self.watchDialog)
+        self.watch_date_field = QtWidgets.QDateEdit(self.watchDialog)
         self.watch_form_layout.addRow("Дата:", self.watch_date_field)
         self.watch_button_box = QtWidgets.QDialogButtonBox(self.watchDialog)
         self.watch_button_box.watchButton = QtWidgets.QPushButton(self.watchDialog)
@@ -86,12 +89,15 @@ class Ui_MainWindow(object):
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def on_add_button_clicked(self): #К первой кнопке
+        date = self.calendarWidget.selectedDate().toString("yyyy-MM-dd")
+        self.date_field.setText(date)
         self.commitDialog.show()
-        self.on_commit_button_clicked
-
+        
+        
     def on_commit_button_clicked(self): #К первой кнопке
         connection = sqlite3.connect(DATABASE_FILE)
-        date = self.date_field.text()
+        date = self.calendarWidget.selectedDate().toString("yyyy-MM-dd")
+        self.date_field.setText(date)
         money = self.money_field.text()
         data_tuple = (date, money)
         addToTable(connection, data_tuple)
@@ -100,15 +106,14 @@ class Ui_MainWindow(object):
 
     def on_cancel_button_clicked(self): #К первой кнопке
         self.commitDialog.close()
-
+    
     def on_cancelWatch_button_clicked(self): #Ко второй кнопке
         self.watchDialog.close()
-
+    
     def on_watchFromTable_button_clicked(self):#Ко второй кнопке
         connection = sqlite3.connect(DATABASE_FILE)
-        date = self.watch_date_field.text()
+        date = self.watch_date_field.date().toString("yyyy-MM-dd")
         data_tuple = (date,)
-        outOfTable(connection, data_tuple)
         receiveData = outOfTable(connection, data_tuple)
         formattedData = "\n".join(map(str, receiveData))
         ui.textBrowser.setText(formattedData)
@@ -116,7 +121,72 @@ class Ui_MainWindow(object):
 
     def out_of_button_clicked(self): #Ко второй кнопке
         self.watchDialog.show()
-        self.on_watchFromTable_button_clicked
+        
+    def change_button_clicked(self):
+        dialog = QtWidgets.QDialog()
+        dialog.setWindowTitle("Изменение записи")
+        layout = QtWidgets.QVBoxLayout()  # Основной вертикальный макет для размещения виджетов
+        dialog.setLayout(layout)
+        
+        # Подписи к полям ввода
+        date_label = QtWidgets.QLabel("Дата:")
+        income_label = QtWidgets.QLabel("Новый доход:")
+        spending_label = QtWidgets.QLabel("Новый расход:")
+        
+        # Поля ввода
+        date_edit = QtWidgets.QDateEdit()
+        date_edit.setFont(QtGui.QFont("Arial", 12))  # Установка шрифта и размера шрифта
+        date_edit.setFixedWidth(130)
+        income_spinbox = QtWidgets.QSpinBox()
+        income_spinbox.setMinimum(0)
+        income_spinbox.setMaximum(2147483647)
+        income_spinbox.setFont(QtGui.QFont("Arial", 12))  # Установка шрифта и размера шрифта
+        income_spinbox.setFixedWidth(130)
+        spending_spinbox = QtWidgets.QSpinBox()
+        spending_spinbox.setMinimum(0)
+        spending_spinbox.setMaximum(2147483647)
+        spending_spinbox.setFont(QtGui.QFont("Arial", 12))  # Установка шрифта и размера шрифта
+        spending_spinbox.setFixedWidth(130)
+        
+        # Кнопка OK
+        ok_button = QtWidgets.QPushButton("OK")
+        
+        # Горизонтальные макеты для каждой строки
+        date_layout = QtWidgets.QHBoxLayout()
+        income_layout = QtWidgets.QHBoxLayout()
+        spending_layout = QtWidgets.QHBoxLayout()
+        button_layout = QtWidgets.QHBoxLayout()
+        
+        # Установка выравнивания влево для каждого горизонтального макета
+        date_layout.setAlignment(QtCore.Qt.AlignLeft)
+        income_layout.setAlignment(QtCore.Qt.AlignLeft)
+        spending_layout.setAlignment(QtCore.Qt.AlignLeft)
+        button_layout.setAlignment(QtCore.Qt.AlignLeft)
+        
+        # Добавление подписей и полей ввода в соответствующие макеты
+        date_layout.addWidget(date_label)
+        date_layout.addWidget(date_edit)
+        income_layout.addWidget(income_label)
+        income_layout.addWidget(income_spinbox)
+        spending_layout.addWidget(spending_label)
+        spending_layout.addWidget(spending_spinbox)
+        button_layout.addWidget(ok_button)
+        
+        # Добавление горизонтальных макетов в основной вертикальный макет
+        layout.addLayout(date_layout)
+        layout.addLayout(income_layout)
+        layout.addLayout(spending_layout)
+        layout.addLayout(button_layout)
+        
+        dialog.resize(300, 300)  # Установка размеров диалогового окна
+        
+        if dialog.exec_():
+            selected_date = date_edit.date().toString("yyyy-MM-dd")
+            selected_income = income_spinbox.value()
+            selected_spending = spending_spinbox.value()
+            print("Введённая дата:", selected_date)
+            print("Введённый доход:", selected_income)
+            print("Введённый расход:", selected_spending)
 
 
     def retranslateUi(self, MainWindow):
@@ -130,7 +200,6 @@ class Ui_MainWindow(object):
         self.button_box.cancelButton.setText(_translate("MainWindow", "Отмена"))
         self.watch_button_box.watchButton.setText(_translate("MainWindow", "Применить"))
         self.watch_button_box.cancelWatchButton.setText(_translate("MainWindow", "Отмена"))
-
 
 def addToTable(connection, date, income, spending):#TODO переделать вызовы функции
     """Функция добавления записей в БД
