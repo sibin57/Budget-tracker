@@ -53,7 +53,7 @@ class Ui_MainWindow(object):
         self.statusbar.setObjectName("statusbar")
         MainWindow.setStatusBar(self.statusbar)
         #Диалоговое окно добавления записей в таблицу базы данных
-        self.commitDialog = QtWidgets.QDialog() 
+        self.commitDialog = QtWidgets.QDialog()
         self.commitDialog.setWindowTitle("Введите данные")
         self.commitDialog.resize(300, 200)
         self.form_layout = QtWidgets.QFormLayout(self.commitDialog)
@@ -92,47 +92,45 @@ class Ui_MainWindow(object):
         date = self.calendarWidget.selectedDate().toString("yyyy-MM-dd")
         self.date_field.setText(date)
         self.commitDialog.show()
-        
-        
+
+
     def on_commit_button_clicked(self): #К первой кнопке
         connection = sqlite3.connect(DATABASE_FILE)
         date = self.calendarWidget.selectedDate().toString("yyyy-MM-dd")
         self.date_field.setText(date)
-        money = self.money_field.text()
-        data_tuple = (date, money)
-        addToTable(connection, data_tuple)
+        money = self.money_field.text() #TODO переделайте окошко: добавьте поля для доходов и расходов
+        addToTable(connection, date, income, spending)#Вот вам функция 
         ui.textBrowser.append("Успешно добавлено!")
         self.commitDialog.close()
 
     def on_cancel_button_clicked(self): #К первой кнопке
         self.commitDialog.close()
-    
+
     def on_cancelWatch_button_clicked(self): #Ко второй кнопке
         self.watchDialog.close()
-    
+
     def on_watchFromTable_button_clicked(self):#Ко второй кнопке
         connection = sqlite3.connect(DATABASE_FILE)
         date = self.watch_date_field.date().toString("yyyy-MM-dd")
-        data_tuple = (date,)
-        receiveData = outOfTable(connection, data_tuple)
+        receiveData = outOfTable(connection, date)
         formattedData = "\n".join(map(str, receiveData))
         ui.textBrowser.setText(formattedData)
         connection.close()
 
     def out_of_button_clicked(self): #Ко второй кнопке
         self.watchDialog.show()
-        
+
     def change_button_clicked(self):
         dialog = QtWidgets.QDialog()
         dialog.setWindowTitle("Изменение записи")
         layout = QtWidgets.QVBoxLayout()  # Основной вертикальный макет для размещения виджетов
         dialog.setLayout(layout)
-        
+
         # Подписи к полям ввода
         date_label = QtWidgets.QLabel("Дата:")
         income_label = QtWidgets.QLabel("Новый доход:")
         spending_label = QtWidgets.QLabel("Новый расход:")
-        
+
         # Поля ввода
         date_edit = QtWidgets.QDateEdit()
         date_edit.setFont(QtGui.QFont("Arial", 12))  # Установка шрифта и размера шрифта
@@ -147,22 +145,22 @@ class Ui_MainWindow(object):
         spending_spinbox.setMaximum(2147483647)
         spending_spinbox.setFont(QtGui.QFont("Arial", 12))  # Установка шрифта и размера шрифта
         spending_spinbox.setFixedWidth(130)
-        
+
         # Кнопка OK
         ok_button = QtWidgets.QPushButton("OK")
-        
+
         # Горизонтальные макеты для каждой строки
         date_layout = QtWidgets.QHBoxLayout()
         income_layout = QtWidgets.QHBoxLayout()
         spending_layout = QtWidgets.QHBoxLayout()
         button_layout = QtWidgets.QHBoxLayout()
-        
+
         # Установка выравнивания влево для каждого горизонтального макета
         date_layout.setAlignment(QtCore.Qt.AlignLeft)
         income_layout.setAlignment(QtCore.Qt.AlignLeft)
         spending_layout.setAlignment(QtCore.Qt.AlignLeft)
         button_layout.setAlignment(QtCore.Qt.AlignLeft)
-        
+
         # Добавление подписей и полей ввода в соответствующие макеты
         date_layout.addWidget(date_label)
         date_layout.addWidget(date_edit)
@@ -171,22 +169,24 @@ class Ui_MainWindow(object):
         spending_layout.addWidget(spending_label)
         spending_layout.addWidget(spending_spinbox)
         button_layout.addWidget(ok_button)
-        
+
         # Добавление горизонтальных макетов в основной вертикальный макет
         layout.addLayout(date_layout)
         layout.addLayout(income_layout)
         layout.addLayout(spending_layout)
         layout.addLayout(button_layout)
-        
+
         dialog.resize(300, 300)  # Установка размеров диалогового окна
-        
+
         if dialog.exec_():
             selected_date = date_edit.date().toString("yyyy-MM-dd")
             selected_income = income_spinbox.value()
             selected_spending = spending_spinbox.value()
+            response = changeTable(selected_date, selected_income, selected_spending)
             print("Введённая дата:", selected_date)
             print("Введённый доход:", selected_income)
             print("Введённый расход:", selected_spending)
+            print("Произошло ли изменение?:",response)
 
 
     def retranslateUi(self, MainWindow):
@@ -201,7 +201,10 @@ class Ui_MainWindow(object):
         self.watch_button_box.watchButton.setText(_translate("MainWindow", "Применить"))
         self.watch_button_box.cancelWatchButton.setText(_translate("MainWindow", "Отмена"))
 
-def addToTable(connection, date, income, spending):#TODO переделать вызовы функции
+#TODO добавьте функционал для кнопки удаления, используйте deleteFromTable(connection, date)
+
+#Функции для работы с БД
+def addToTable(connection, date, income, spending):
     """Функция добавления записей в БД
     :connection: объект sql подключения
     :date: строка даты в формате "yyyy-MM-dd"
@@ -217,11 +220,11 @@ def addToTable(connection, date, income, spending):#TODO переделать в
     connection.commit()
     connection.close()
 
-def outOfTable(connection, date):#TODO переделать вызовы
+def outOfTable(connection, date):
     """Функция получения записей из БД по дате
     :connection: объект sql подключения
     :date: строка даты в формате "yyyy-MM-dd"
-    :returns: кортеж вида (date, income, spending) (str, int, int)
+    :return: кортеж вида (date, income, spending) (str, int, int)
     """
     try:
         cursor = connection.cursor()
@@ -229,6 +232,41 @@ def outOfTable(connection, date):#TODO переделать вызовы
         print(f"Ошибка подключения к базе данных: {e}")
     cursor.execute("SELECT date, income, spending FROM budget WHERE date = ?", (date,))
     response = cursor.fetchall()
+    connection.commit()
+    connection.close()
+    return response
+
+def changeTable(connection, date, income, spending):
+    """Функция изменения записей в БД
+    :connection: объект sql подключения
+    :date: строка, дата записи в формате "yyyy-MM-dd"
+    :income: число, новый денежный доход
+    :spending: число, новый денежный расход
+    :return: bool, успех операции (было ли что-то изменено)
+    """
+    try:
+        cursor = connection.cursor()
+    except sqlite3.Error as e:
+        print(f"Ошибка подключения к базе данных: {e}")
+
+    cursor.execute("UPDATE budget SET income = ?, spending = ? WHERE date = ?", (income, spending, date))
+    response = bool(cursor.rowcount)
+    connection.commit()
+    connection.close()
+    return response
+
+def deleteFromTable(connection, date)
+    """Функция удаления записей из БД по дате
+    :connection: объект sql подключения
+    :date: строка даты в формате "yyyy-MM-dd"
+    :return: bool, успех операции
+    """
+    try:
+        cursor = connection.cursor()
+    except sqlite3.Error as e:
+        print(f"Ошибка подключения к базе данных: {e}")
+    cursor.execute("DELETE FROM budget WHERE date = ?", (date,))
+    response = bool(cursor.rowcount())
     connection.commit()
     connection.close()
     return response
