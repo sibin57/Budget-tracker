@@ -4,7 +4,7 @@ from PyQt5 import QtGui
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QInputDialog, QLineEdit
 
-DATABASE_FILE = "timeMoney.db"
+DATABASE_FILE = "C:\\Users\\User\\Downloads\\timeMoney.db"
 
 class Ui_MainWindow(object):
 
@@ -60,9 +60,11 @@ class Ui_MainWindow(object):
         self.form_layout = QtWidgets.QFormLayout(self.commitDialog)
         self.date_field = QtWidgets.QDateEdit(self.commitDialog)
         self.form_layout.addRow("Дата:", self.date_field)
-        self.incoming_field = QtWidgets.QLineEdit(self.commitDialog)
+        self.incoming_field = QtWidgets.QSpinBox(self.commitDialog)
+        self.incoming_field.setRange(0, 2147483647)
         self.form_layout.addRow("Количество зачисленных денег:", self.incoming_field)
-        self.spending_field = QtWidgets.QLineEdit(self.commitDialog)
+        self.spending_field = QtWidgets.QSpinBox(self.commitDialog)
+        self.spending_field.setRange(0, 2147483647)
         self.form_layout.addRow("Количество потраченных денег:", self.spending_field)
         self.button_box = QtWidgets.QDialogButtonBox(self.commitDialog)
         self.button_box.commitButton = QtWidgets.QPushButton(self.commitDialog)
@@ -101,7 +103,7 @@ class Ui_MainWindow(object):
         self.change_form_layout.addRow("Изменить количество зачисленных денег:", self.income_edit_field)
         self.spending_edit_field = QtWidgets.QSpinBox(self.changeDialog)
         self.spending_edit_field.setRange(0, 2147483647)
-        self.change_form_layout.addRow("Изменить количество зачисленных денег:", self.spending_edit_field)
+        self.change_form_layout.addRow("Изменить количество потраченных денег:", self.spending_edit_field)
         self.change_button_box = QtWidgets.QDialogButtonBox(self.changeDialog)
         self.change_button_box.changeButton = QtWidgets.QPushButton(self.changeDialog)
         self.change_button_box.changeButton.setGeometry(QtCore.QRect(30, 90, 75, 23))
