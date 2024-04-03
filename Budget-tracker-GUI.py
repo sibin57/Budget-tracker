@@ -122,11 +122,11 @@ class Ui_MainWindow(object):
 
     def on_commit_button_clicked(self): #К первой кнопке
         connection = sqlite3.connect(DATABASE_FILE)
-        self.date_field.date().toString("dd.MM.yyyy") 
+        self.date_field.date().toString("dd.MM.yyyy")
         date = self.date_field.text()
         income = self.incoming_field.text()
-        spending = self.spending_field.text() #TODO переделайте окошко: добавьте поля для доходов и расходов
-        addToTable(connection, date, income, spending)#Вот вам функция 
+        spending = self.spending_field.text()
+        addToTable(connection, date, income, spending)
         ui.textBrowser.append("Успешно добавлено!")
         self.commitDialog.close()
 
@@ -139,8 +139,8 @@ class Ui_MainWindow(object):
     def on_watchFromTable_button_clicked(self):#Ко второй кнопке
         connection = sqlite3.connect(DATABASE_FILE)
         date = self.watch_date_field.date().toString("dd.MM.yyyy")
-        receiveData = outOfTable(connection, date)
-        formattedData = "\n".join(map(str, receiveData))
+        receivedData = outOfTable(connection, date)
+        formattedData = "\n".join(map(str, receivedData))
         ui.textBrowser.setText(formattedData)
         connection.close()
 
@@ -148,6 +148,12 @@ class Ui_MainWindow(object):
         self.watchDialog.show()
 
     def openChangeDialog_button_clicked(self):
+        connection = sqlite3.connect(DATABASE_FILE)
+        receivedData = getAllFromTable(connection)
+        formattedData ="    Дата     | Доходы | Расходы \n"
+        for entry in receivedData:
+            formattedData+=" | ".join(map(str, entry))+"\n"
+        ui.textBrowser.setText(formattedData)
         self.changeDialog.show()
 
     def quitChangeDialog_button_clicked(self):
@@ -161,8 +167,8 @@ class Ui_MainWindow(object):
         changeTable(connection, selected_date, selected_income, selected_spending)
         ui.textBrowser.append("Данные успешно были изменены!")
         self.changeDialog.close()
-        
-          
+
+
     def retranslateUi(self, MainWindow): # Если нужно назвать кнопку пишите сюда по примеру
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
@@ -229,7 +235,7 @@ def changeTable(connection, date, income, spending):
     response = cursor.fetchall()
     connection.commit()
     connection.close()
-    
+
 
 def deleteFromTable(connection, date):
     """Функция удаления записей из БД по дате
@@ -246,6 +252,23 @@ def deleteFromTable(connection, date):
     connection.commit()
     connection.close()
     return response
+
+def getAllFromTable(connection):
+    """Функция для получения всех данных из БД
+    :connection: объект sql подключения
+    :return: кортеж кортежей вида (date, income, spending)
+    """
+    try:
+        cursor = connection.cursor()
+    except sqlite3.Error as e:
+        print(f"Ошибка подключения к базе данных: {e}")
+    finally:
+        cursor.execute("SELECT date, income, spending FROM budget")
+        response = cursor.fetchall()
+        connection.commit()
+        connection.close()
+    return response
+
 
 def checkDatabase():
     """Функция для проверки существования БД.
