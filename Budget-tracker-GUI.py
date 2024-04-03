@@ -1,5 +1,8 @@
 import sqlite3
 from PyQt5 import QtCore, QtWidgets
+import os
+
+DATABASE_FILE = "timeMoney.db"
 
 class Ui_MainWindow(object):
 
@@ -47,7 +50,7 @@ class Ui_MainWindow(object):
         self.statusbar.setObjectName("statusbar")
         MainWindow.setStatusBar(self.statusbar)
         #Диалоговое окно добавления записей в таблицу базы данных
-        self.commitDialog = QtWidgets.QDialog() 
+        self.commitDialog = QtWidgets.QDialog()
         self.commitDialog.setWindowTitle("Введите данные")
         self.commitDialog.resize(300, 200)
         self.form_layout = QtWidgets.QFormLayout(self.commitDialog)
@@ -85,9 +88,9 @@ class Ui_MainWindow(object):
     def on_add_button_clicked(self): #К первой кнопке
         self.commitDialog.show()
         self.on_commit_button_clicked
-        
+
     def on_commit_button_clicked(self): #К первой кнопке
-        connection = sqlite3.connect("timeMoney.db")
+        connection = sqlite3.connect(DATABASE_FILE)
         date = self.date_field.text()
         money = self.money_field.text()
         data_tuple = (date, money)
@@ -97,12 +100,12 @@ class Ui_MainWindow(object):
 
     def on_cancel_button_clicked(self): #К первой кнопке
         self.commitDialog.close()
-    
+
     def on_cancelWatch_button_clicked(self): #Ко второй кнопке
         self.watchDialog.close()
-    
+
     def on_watchFromTable_button_clicked(self):#Ко второй кнопке
-        connection = sqlite3.connect("timeMoney.db")
+        connection = sqlite3.connect(DATABASE_FILE)
         date = self.watch_date_field.text()
         data_tuple = (date,)
         outOfTable(connection, data_tuple)
@@ -114,7 +117,7 @@ class Ui_MainWindow(object):
     def out_of_button_clicked(self): #Ко второй кнопке
         self.watchDialog.show()
         self.on_watchFromTable_button_clicked
-        
+
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
@@ -133,7 +136,7 @@ def addToTable(connection, data_tuple):
     try:
         cursor = connection.cursor()
     except sqlite3.Error as e:
-        print(f"Ошибка подключения к базе данных: {e}")    
+        print(f"Ошибка подключения к базе данных: {e}")
 
     cursor.execute("""INSERT INTO Tracking (date, money) values (?, ?)""", data_tuple)
     connection.commit()
@@ -143,15 +146,37 @@ def outOfTable(connection, data_tuple):
     try:
         cursor = connection.cursor()
     except sqlite3.Error as e:
-        print(f"Ошибка подключения к базе данных: {e}")  
+        print(f"Ошибка подключения к базе данных: {e}")
     cursor.execute("""SELECT money, date FROM Tracking WHERE date = ?""", data_tuple)
     info = cursor.fetchall()
     connection.commit()
     return info
-    
+
+def checkDatabase():
+    """Функция для проверки существования БД.
+    Если БД не существует, то функция её генерирует
+    """
+    try:
+        conn = sqlite3.connect(DATABASE_FILE)
+        conn.cursor().execute("DROP TABLE IF EXISTS budget;")
+        conn.cursor().execute("""
+            CREATE TABLE IF NOT EXISTS budget (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                day         TEXT NOT NULL,
+                income      INTEGER,
+                spending    INTEGER
+            );
+                              """)
+    except Error as e:
+        print(e)
+    finally:
+        if conn:
+            conn.close()
+
 
 if __name__ == "__main__":
     import sys
+    checkDatabase()
     app = QtWidgets.QApplication(sys.argv)
     MainWindow = QtWidgets.QMainWindow()
     ui = Ui_MainWindow()
