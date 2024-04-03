@@ -144,19 +144,25 @@ def addToTable(connection, date, income, spending):#TODO переделать в
     except sqlite3.Error as e:
         print(f"Ошибка подключения к базе данных: {e}")
 
-    cursor.execute("""INSERT INTO Tracking (date, money) values (?, ?)""", data_tuple)#TODO переделать запрос
+    cursor.execute("INSERT INTO budget (date, income, spending) values (?, ?, ?)", (date, income, spending))
     connection.commit()
     connection.close()
 
-def outOfTable(connection, data_tuple):
+def outOfTable(connection, date):#TODO переделать вызовы
+    """Функция получения записей из БД по дате
+    :connection: объект sql подключения
+    :date: строка даты в формате "yyyy-MM-dd"
+    :returns: кортеж вида (date, income, spending) (str, int, int)
+    """
     try:
         cursor = connection.cursor()
     except sqlite3.Error as e:
         print(f"Ошибка подключения к базе данных: {e}")
-    cursor.execute("""SELECT money, date FROM Tracking WHERE date = ?""", data_tuple)
-    info = cursor.fetchall()
+    cursor.execute("SELECT date, income, spending FROM budget WHERE date = ?", (date,))
+    response = cursor.fetchall()
     connection.commit()
-    return info
+    connection.close()
+    return response
 
 def checkDatabase():
     """Функция для проверки существования БД.
