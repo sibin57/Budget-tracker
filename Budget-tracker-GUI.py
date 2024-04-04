@@ -324,11 +324,10 @@ def deleteFromTable(connection, date):
         cursor = connection.cursor()
     except sqlite3.Error as e:
         print(f"Ошибка подключения к базе данных: {e}")
-    cursor.execute("DELETE income, spending FROM budget WHERE date = ?", (date,))
-    response = bool(cursor.rowcount())
+    cursor.execute("DELETE FROM budget WHERE date = ?", (date,))
     connection.commit()
     connection.close()
-    return response
+
 
 def checkDatabase():
     """Функция для проверки существования БД.
