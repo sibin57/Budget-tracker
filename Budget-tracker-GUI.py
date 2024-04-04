@@ -3,6 +3,8 @@ import os
 from PyQt5 import QtGui
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QInputDialog, QLineEdit
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
 
 DATABASE_FILE = "timeMoney.db"
 
@@ -32,18 +34,23 @@ class Ui_MainWindow(object):
         self.pushButton_4 = QtWidgets.QPushButton(self.Buttons)
         self.pushButton_4.setGeometry(QtCore.QRect(30, 210, 75, 23))
         self.pushButton_4.setObjectName("pushButton_4")
+        self.pushButton_4.clicked.connect(self.openDeleteDialog_button_clicked)
         self.textBrowser = QtWidgets.QTextBrowser(self.Buttons)
         self.textBrowser.setGeometry(QtCore.QRect(130, 0, 256, 251))
         self.textBrowser.setObjectName("textBrowser")
         self.lcdNumber = QtWidgets.QLCDNumber(self.centralwidget)
         self.lcdNumber.setGeometry(QtCore.QRect(580, 260, 221, 71))
         self.lcdNumber.setObjectName("lcdNumber")
+        total = calculate_total()
+        self.lcdNumber.display(total)
         self.calendarWidget = QtWidgets.QCalendarWidget(self.centralwidget)
         self.calendarWidget.setGeometry(QtCore.QRect(0, 0, 312, 183))
         self.calendarWidget.setObjectName("calendarWidget")
         self.graphicsView = QtWidgets.QGraphicsView(self.centralwidget)
-        self.graphicsView.setGeometry(QtCore.QRect(50, 340, 771, 261))
+        self.graphicsView.setGeometry(QtCore.QRect(50, 340, 771, 300))
         self.graphicsView.setObjectName("graphicsView")
+        data = getData()
+        self.draw_plot(data)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 884, 21))
@@ -92,26 +99,45 @@ class Ui_MainWindow(object):
         self.watch_form_layout.addWidget(self.watch_button_box)
 
         #Диалоговое окно для изменения записей с таблицы базы данных
-        self.changeDialog = QtWidgets.QDialog() #Создается диалог
+        self.changeDialog = QtWidgets.QDialog()
         self.changeDialog.setWindowTitle("Измените данные")
         self.changeDialog.resize(400, 200)
-        self.change_form_layout = QtWidgets.QFormLayout(self.changeDialog) #Видимый слой на котором в будущем будут добавляться элементы ниже
-        self.change_date_field = QtWidgets.QDateEdit(self.changeDialog) # Поле с датой
-        self.change_form_layout.addRow("Выбор даты:", self.change_date_field) # Возле поля с датой пишется название этого поля
+        self.change_form_layout = QtWidgets.QFormLayout(self.changeDialog)
+        self.change_date_field = QtWidgets.QDateEdit(self.changeDialog)
+        self.change_form_layout.addRow("Выбор даты:", self.change_date_field)
         self.income_edit_field = QtWidgets.QSpinBox(self.changeDialog)
-        self.income_edit_field.setRange(0, 2147483647) #Установка границ максимального числа в поле
+        self.income_edit_field.setRange(0, 2147483647)
         self.change_form_layout.addRow("Изменить количество зачисленных денег:", self.income_edit_field)
         self.spending_edit_field = QtWidgets.QSpinBox(self.changeDialog)
         self.spending_edit_field.setRange(0, 2147483647)
         self.change_form_layout.addRow("Изменить количество потраченных денег:", self.spending_edit_field)
-        self.change_button_box = QtWidgets.QDialogButtonBox(self.changeDialog) # Сетка для кнопок
-        self.change_button_box.changeButton = QtWidgets.QPushButton(self.changeDialog) # Инициализация кнопки
-        self.change_button_box.changeButton.setGeometry(QtCore.QRect(30, 90, 75, 23)) # Установка положения кнопки
-        self.change_button_box.changeButton.clicked.connect(self.change_button_clicked) # Установка метода в кнопку ПРИ нажатии на нее
+        self.change_button_box = QtWidgets.QDialogButtonBox(self.changeDialog)
+        self.change_button_box.changeButton = QtWidgets.QPushButton(self.changeDialog)
+        self.change_button_box.changeButton.setGeometry(QtCore.QRect(30, 90, 75, 23))
+        self.change_button_box.changeButton.clicked.connect(self.change_button_clicked)
         self.change_button_box.cancelChangeButton = QtWidgets.QPushButton(self.changeDialog)
         self.change_button_box.cancelChangeButton.setGeometry(QtCore.QRect(150, 90, 75, 23))
         self.change_button_box.cancelChangeButton.clicked.connect(self.quitChangeDialog_button_clicked)
-        self.change_form_layout.addWidget(self.watch_button_box) # Добавление сетки с кнопками
+        self.change_form_layout.addWidget(self.watch_button_box)
+        
+        #Диалоговое окно для удаление определенных записей
+        self.deleteDialog = QtWidgets.QDialog()
+        self.deleteDialog.setWindowTitle("Удалите данные")
+        self.deleteDialog.resize(300, 200)
+        self.delete_form_layout = QtWidgets.QFormLayout(self.deleteDialog)
+        self.delete_date_field = QtWidgets.QDateEdit(self.deleteDialog)
+        self.delete_form_layout.addRow("Выбор даты для удаления данных", self.delete_date_field)
+        self.delete_button_box = QtWidgets.QDialogButtonBox(self.deleteDialog)
+        self.delete_button_box.deleteButton = QtWidgets.QPushButton(self.deleteDialog)
+        self.delete_button_box.deleteButton.setGeometry(QtCore.QRect(30, 90, 75, 23))
+        self.delete_button_box.deleteButton.clicked.connect(self.on_deleteFromTable_button_clicked)
+        self.delete_button_box.cancelDeleteButton = QtWidgets.QPushButton(self.deleteDialog)
+        self.delete_button_box.cancelDeleteButton.setGeometry(QtCore.QRect(180, 90, 75, 23))
+        self.delete_button_box.cancelDeleteButton.clicked.connect(self.closeDeleteDialog_button_clicked)
+
+
+
+
 
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
@@ -142,28 +168,70 @@ class Ui_MainWindow(object):
         receiveData = outOfTable(connection, date)
         formattedData = "\n".join(map(str, receiveData))
         ui.textBrowser.setText(formattedData)
-        connection.close()
 
     def out_of_button_clicked(self): #Ко второй кнопке
         self.watchDialog.show()
 
     def openChangeDialog_button_clicked(self):
         self.changeDialog.show()
+        connection = sqlite3.connect(DATABASE_FILE)
+        response = seeAll(connection)
+        formattedData = "\n".join(map(str, response))
+        ui.textBrowser.append(formattedData)
 
     def quitChangeDialog_button_clicked(self):
         self.changeDialog.close()
 
     def change_button_clicked(self):
         connection = sqlite3.connect(DATABASE_FILE)
+        response = seeAll(connection)
+        formattedData = "\n".join(map(str, response))
+        ui.textBrowser.append(formattedData)
         selected_date = self.change_date_field.date().toString("dd.MM.yyyy")
         selected_income = self.income_edit_field.text()
         selected_spending = self.spending_edit_field.text()
         changeTable(connection, selected_date, selected_income, selected_spending)
         ui.textBrowser.append("Данные успешно были изменены!")
         self.changeDialog.close()
+
+    def draw_plot(self, data):
+        canvas = FigureCanvas(Figure(figsize=(7, 3)))
         
-          
-    def retranslateUi(self, MainWindow): # Если нужно назвать кнопку пишите сюда по примеру
+        canvas.figure.clear()
+
+        ax = canvas.figure.add_subplot(111)
+
+        dates = [entry[0] for entry in data]
+        income = [entry[1] for entry in data]
+        spending = [entry[2] for entry in data]
+
+        ax.plot(dates, income, label='Доход', color='blue')
+        ax.plot(dates, spending, label='Расход', color='red')
+
+        ax.legend()
+
+        ax.set_xlabel('Дата')
+        ax.set_ylabel('Деньги')
+
+        canvas.draw()
+
+        scene = QtWidgets.QGraphicsScene()
+        plot_item = scene.addWidget(canvas)
+        self.graphicsView.setScene(scene)
+        
+    def on_deleteFromTable_button_clicked(self):
+        connection = sqlite3.connect(DATABASE_FILE)
+        date = self.delete_date_field.date().toString("dd.MM.yyyy")
+        deleteFromTable(connection, date)
+        ui.textBrowser.setText("Данные успешно удалены")   
+
+    def openDeleteDialog_button_clicked(self):
+        self.deleteDialog.show()
+
+    def closeDeleteDialog_button_clicked(self):
+        self.deleteDialog.close()
+    
+    def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
         self.pushButton.setText(_translate("MainWindow", "Добавить"))
@@ -176,10 +244,24 @@ class Ui_MainWindow(object):
         self.watch_button_box.cancelWatchButton.setText(_translate("MainWindow", "Отмена"))
         self.change_button_box.changeButton.setText(_translate("MainWindow", "Изменить"))
         self.change_button_box.cancelChangeButton.setText(_translate("MainWindow", "Отмена"))
+        self.delete_button_box.deleteButton.setText(_translate("MainWindow", "Удалить"))
+        self.delete_button_box.cancelDeleteButton.setText(_translate("MainWindow", "Отмена"))
 
 #TODO добавьте функционал для кнопки удаления, используйте deleteFromTable(connection, date)
 
 #Функции для работы с БД
+
+def seeAll(connection):
+        try:
+            cursor = connection.cursor()
+        except sqlite3.Error as e:
+            print(f"Ошибка подключения к базе данных: {e}")
+        cursor.execute("SELECT date, income, spending FROM budget")
+        response = cursor.fetchall()
+        connection.commit()
+        connection.close()
+        return response
+
 def addToTable(connection, date, income, spending):
     """Функция добавления записей в БД
     :connection: объект sql подключения
@@ -225,6 +307,7 @@ def changeTable(connection, date, income, spending):
     except sqlite3.Error as e:
         print(f"Ошибка подключения к базе данных: {e}")
 
+    
     cursor.execute("UPDATE budget SET income = ?, spending = ? WHERE date = ?", (income, spending, date))
     response = cursor.fetchall()
     connection.commit()
@@ -241,7 +324,7 @@ def deleteFromTable(connection, date):
         cursor = connection.cursor()
     except sqlite3.Error as e:
         print(f"Ошибка подключения к базе данных: {e}")
-    cursor.execute("DELETE FROM budget WHERE date = ?", (date,))
+    cursor.execute("DELETE income, spending FROM budget WHERE date = ?", (date,))
     response = bool(cursor.rowcount())
     connection.commit()
     connection.close()
@@ -266,6 +349,31 @@ def checkDatabase():
     finally:
         if conn:
             conn.close()
+
+def getData():
+    connection = sqlite3.connect(DATABASE_FILE)
+    try:
+        cursor = connection.cursor()
+    except sqlite3.Error as e:
+        print(f"Ошибка подключения к базе данных: {e}")
+
+    cursor.execute("SELECT date, income, spending FROM budget")
+    data = cursor.fetchall()
+    connection.close()
+
+    return data
+
+def calculate_total():
+        connection = sqlite3.connect(DATABASE_FILE)
+        cursor = connection.cursor()
+        
+        # Выполняем запрос для получения общей суммы
+        cursor.execute("SELECT SUM(income) - SUM(spending) FROM budget")
+        total = cursor.fetchone()[0] or 0  # Если запрос вернул None, устанавливаем значение по умолчанию 0
+
+        connection.close()
+        
+        return total
 
 
 if __name__ == "__main__":
