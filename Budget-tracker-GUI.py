@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QInputDialog
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 
-DATABASE_FILE = "C:\\Users\\User\\Downloads\\timeMoney.db"
+DATABASE_FILE = "C:\\Users\\kk300\\Downloads\\py\\timeMoney.db"
 
 class Ui_MainWindow(object):
 
@@ -40,13 +40,16 @@ class Ui_MainWindow(object):
         self.lcdNumber = QtWidgets.QLCDNumber(self.centralwidget)
         self.lcdNumber.setGeometry(QtCore.QRect(580, 260, 221, 71))
         self.lcdNumber.setObjectName("lcdNumber")
+        total = calculate_total()
+        self.lcdNumber.display(total)
         self.calendarWidget = QtWidgets.QCalendarWidget(self.centralwidget)
         self.calendarWidget.setGeometry(QtCore.QRect(0, 0, 312, 183))
         self.calendarWidget.setObjectName("calendarWidget")
         self.graphicsView = QtWidgets.QGraphicsView(self.centralwidget)
-        self.graphicsView.setGeometry(QtCore.QRect(50, 340, 771, 261))
+        self.graphicsView.setGeometry(QtCore.QRect(50, 340, 771, 300))
         self.graphicsView.setObjectName("graphicsView")
-        self.draw_plot(data) #НУЖНЫ ДАННЫЕ!!!!!!!!!!!!!!!!!!!!!
+        data = getData()
+        self.draw_plot(data)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 884, 21))
@@ -166,35 +169,29 @@ class Ui_MainWindow(object):
         self.changeDialog.close()
 
     def draw_plot(self, data):
-        # Создаем график Matplotlib
-        self.figure = Figure()
-        self.canvas = FigureCanvas(self.figure)
-        self.graphicsView.setScene(self.canvas)
+        canvas = FigureCanvas(Figure(figsize=(7, 3)))
+        
+        canvas.figure.clear()
 
-        # Очистка текущего графика
-        self.figure.clear()
+        ax = canvas.figure.add_subplot(111)
 
-        # Добавляем subplot на график
-        ax = self.figure.add_subplot(111)
-
-        # Извлекаем даты и доход из данных
         dates = [entry[0] for entry in data]
         income = [entry[1] for entry in data]
         spending = [entry[2] for entry in data]
 
-        # Строим графики
         ax.plot(dates, income, label='Доход', color='blue')
         ax.plot(dates, spending, label='Расход', color='red')
 
-        # Добавляем легенду
         ax.legend()
 
-        # Подписываем оси
         ax.set_xlabel('Дата')
         ax.set_ylabel('Деньги')
 
-        # Обновляем график
-        self.canvas.draw()
+        canvas.draw()
+
+        scene = QtWidgets.QGraphicsScene()
+        plot_item = scene.addWidget(canvas)
+        self.graphicsView.setScene(scene)
         
           
     def retranslateUi(self, MainWindow):
@@ -300,6 +297,31 @@ def checkDatabase():
     finally:
         if conn:
             conn.close()
+
+def getData():
+    connection = sqlite3.connect(DATABASE_FILE)
+    try:
+        cursor = connection.cursor()
+    except sqlite3.Error as e:
+        print(f"Ошибка подключения к базе данных: {e}")
+
+    cursor.execute("SELECT date, income, spending FROM budget")
+    data = cursor.fetchall()
+    connection.close()
+
+    return data
+
+def calculate_total():
+        connection = sqlite3.connect(DATABASE_FILE)
+        cursor = connection.cursor()
+        
+        # Выполняем запрос для получения общей суммы
+        cursor.execute("SELECT SUM(income) - SUM(spending) FROM budget")
+        total = cursor.fetchone()[0] or 0  # Если запрос вернул None, устанавливаем значение по умолчанию 0
+
+        connection.close()
+        
+        return total
 
 
 if __name__ == "__main__":
