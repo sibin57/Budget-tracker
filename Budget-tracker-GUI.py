@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QInputDialog
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 
-DATABASE_FILE = "C:\\Users\\kk300\\Downloads\\py\\timeMoney.db"
+DATABASE_FILE = "timeMoney.db"
 
 class Ui_MainWindow(object):
 
@@ -34,6 +34,7 @@ class Ui_MainWindow(object):
         self.pushButton_4 = QtWidgets.QPushButton(self.Buttons)
         self.pushButton_4.setGeometry(QtCore.QRect(30, 210, 75, 23))
         self.pushButton_4.setObjectName("pushButton_4")
+        self.pushButton_4.clicked.connect(self.openDeleteDialog_button_clicked)
         self.textBrowser = QtWidgets.QTextBrowser(self.Buttons)
         self.textBrowser.setGeometry(QtCore.QRect(130, 0, 256, 251))
         self.textBrowser.setObjectName("textBrowser")
@@ -118,6 +119,25 @@ class Ui_MainWindow(object):
         self.change_button_box.cancelChangeButton.setGeometry(QtCore.QRect(150, 90, 75, 23))
         self.change_button_box.cancelChangeButton.clicked.connect(self.quitChangeDialog_button_clicked)
         self.change_form_layout.addWidget(self.watch_button_box)
+        
+        #Диалоговое окно для удаление определенных записей
+        self.deleteDialog = QtWidgets.QDialog()
+        self.deleteDialog.setWindowTitle("Удалите данные")
+        self.deleteDialog.resize(300, 200)
+        self.delete_form_layout = QtWidgets.QFormLayout(self.deleteDialog)
+        self.delete_date_field = QtWidgets.QDateEdit(self.deleteDialog)
+        self.delete_form_layout.addRow("Выбор даты для удаления данных", self.delete_date_field)
+        self.delete_button_box = QtWidgets.QDialogButtonBox(self.deleteDialog)
+        self.delete_button_box.deleteButton = QtWidgets.QPushButton(self.deleteDialog)
+        self.delete_button_box.deleteButton.setGeometry(QtCore.QRect(30, 90, 75, 23))
+        self.delete_button_box.deleteButton.clicked.connect(self.on_deleteFromTable_button_clicked)
+        self.delete_button_box.cancelDeleteButton = QtWidgets.QPushButton(self.deleteDialog)
+        self.delete_button_box.cancelDeleteButton.setGeometry(QtCore.QRect(180, 90, 75, 23))
+        self.delete_button_box.cancelDeleteButton.clicked.connect(self.closeDeleteDialog_button_clicked)
+
+
+
+
 
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
@@ -148,19 +168,25 @@ class Ui_MainWindow(object):
         receiveData = outOfTable(connection, date)
         formattedData = "\n".join(map(str, receiveData))
         ui.textBrowser.setText(formattedData)
-        connection.close()
 
     def out_of_button_clicked(self): #Ко второй кнопке
         self.watchDialog.show()
 
     def openChangeDialog_button_clicked(self):
         self.changeDialog.show()
+        connection = sqlite3.connect(DATABASE_FILE)
+        response = seeAll(connection)
+        formattedData = "\n".join(map(str, response))
+        ui.textBrowser.append(formattedData)
 
     def quitChangeDialog_button_clicked(self):
         self.changeDialog.close()
 
     def change_button_clicked(self):
         connection = sqlite3.connect(DATABASE_FILE)
+        response = seeAll(connection)
+        formattedData = "\n".join(map(str, response))
+        ui.textBrowser.append(formattedData)
         selected_date = self.change_date_field.date().toString("dd.MM.yyyy")
         selected_income = self.income_edit_field.text()
         selected_spending = self.spending_edit_field.text()
@@ -193,7 +219,18 @@ class Ui_MainWindow(object):
         plot_item = scene.addWidget(canvas)
         self.graphicsView.setScene(scene)
         
-          
+    def on_deleteFromTable_button_clicked(self):
+        connection = sqlite3.connect(DATABASE_FILE)
+        date = self.delete_date_field.date().toString("dd.MM.yyyy")
+        deleteFromTable(connection, date)
+        ui.textBrowser.setText("Данные успешно удалены")   
+
+    def openDeleteDialog_button_clicked(self):
+        self.deleteDialog.show()
+
+    def closeDeleteDialog_button_clicked(self):
+        self.deleteDialog.close()
+    
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
@@ -207,10 +244,24 @@ class Ui_MainWindow(object):
         self.watch_button_box.cancelWatchButton.setText(_translate("MainWindow", "Отмена"))
         self.change_button_box.changeButton.setText(_translate("MainWindow", "Изменить"))
         self.change_button_box.cancelChangeButton.setText(_translate("MainWindow", "Отмена"))
+        self.delete_button_box.deleteButton.setText(_translate("MainWindow", "Удалить"))
+        self.delete_button_box.cancelDeleteButton.setText(_translate("MainWindow", "Отмена"))
 
 #TODO добавьте функционал для кнопки удаления, используйте deleteFromTable(connection, date)
 
 #Функции для работы с БД
+
+def seeAll(connection):
+        try:
+            cursor = connection.cursor()
+        except sqlite3.Error as e:
+            print(f"Ошибка подключения к базе данных: {e}")
+        cursor.execute("SELECT date, income, spending FROM budget")
+        response = cursor.fetchall()
+        connection.commit()
+        connection.close()
+        return response
+
 def addToTable(connection, date, income, spending):
     """Функция добавления записей в БД
     :connection: объект sql подключения
@@ -256,6 +307,7 @@ def changeTable(connection, date, income, spending):
     except sqlite3.Error as e:
         print(f"Ошибка подключения к базе данных: {e}")
 
+    
     cursor.execute("UPDATE budget SET income = ?, spending = ? WHERE date = ?", (income, spending, date))
     response = cursor.fetchall()
     connection.commit()
@@ -273,10 +325,8 @@ def deleteFromTable(connection, date):
     except sqlite3.Error as e:
         print(f"Ошибка подключения к базе данных: {e}")
     cursor.execute("DELETE FROM budget WHERE date = ?", (date,))
-    response = bool(cursor.rowcount())
     connection.commit()
     connection.close()
-    return response
 
 def checkDatabase():
     """Функция для проверки существования БД.
