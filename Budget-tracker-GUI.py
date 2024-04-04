@@ -328,6 +328,7 @@ def deleteFromTable(connection, date):
     connection.commit()
     connection.close()
 
+
 def checkDatabase():
     """Функция для проверки существования БД.
     Если БД не существует, то функция её генерирует
